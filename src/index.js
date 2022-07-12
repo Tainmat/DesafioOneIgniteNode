@@ -63,7 +63,29 @@ app.post("/todos", checksExistsUserAccount, (request, response) => {
 });
 
 app.put("/todos/:id", checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  const { user } = request;
+  const { title, deadline } = request.body;
+  const todoId = request.params.id;
+
+  const todoExists = user.todos.some((todo) => todo.id === todoId);
+  if (!todoExists) {
+    return response.status(404).json({ error: "Todo not found" });
+  }
+
+  user.todos.forEach((todo) => {
+    if (todo.id === todoId) {
+      title !== null && title !== undefined && title !== ""
+        ? (todo.title = title)
+        : (todo.title = todo.title);
+      deadline !== null && deadline !== undefined && deadline !== ""
+        ? (todo.deadline = deadline)
+        : (todo.deadline = todo.deadline);
+    }
+  });
+
+  return response
+    .status(201)
+    .json(user.todos.find((todo) => todo.id === todoId));
 });
 
 app.patch("/todos/:id/done", checksExistsUserAccount, (request, response) => {
