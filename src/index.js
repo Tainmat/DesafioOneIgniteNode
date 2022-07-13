@@ -19,6 +19,20 @@ function checksExistsUserAccount(request, response, next) {
   return next();
 }
 
+function chekTodoExists(request, response, next) {
+  const { username } = request.headers;
+  const todoId = request.params.id;
+  const user = users.find((user) => user.username === username);
+  const todoExists = user.todos.some((todo) => todo.id === todoId);
+
+  if (!todoExists)
+    return response.status(404).json({ error: "Todo not found" });
+
+  return next();
+
+  // return user.todos.some((todo) => todo.id === todoId);
+}
+
 app.post("/users", (request, response) => {
   const { name, username } = request.body;
 
@@ -65,38 +79,65 @@ app.post("/todos", checksExistsUserAccount, (request, response) => {
     .json(user.todos.find((todo) => todo.id === todoId));
 });
 
-app.put("/todos/:id", checksExistsUserAccount, (request, response) => {
-  const { user } = request;
-  const { title, deadline } = request.body;
-  const todoId = request.params.id;
+app.put(
+  "/todos/:id",
+  checksExistsUserAccount,
+  chekTodoExists,
+  (request, response) => {
+    const { user } = request;
+    const { title, deadline } = request.body;
+    const todoId = request.params.id;
 
-  const todoExists = user.todos.some((todo) => todo.id === todoId);
-  if (!todoExists) {
-    return response.status(404).json({ error: "Todo not found" });
+    user.todos.forEach((todo) => {
+      if (todo.id === todoId) {
+        title !== null && title !== undefined && title !== ""
+          ? (todo.title = title)
+          : (todo.title = todo.title);
+        deadline !== null && deadline !== undefined && deadline !== ""
+          ? (todo.deadline = deadline)
+          : (todo.deadline = todo.deadline);
+      }
+    });
+
+    return response
+      .status(201)
+      .json(user.todos.find((todo) => todo.id === todoId));
   }
+);
 
-  user.todos.forEach((todo) => {
-    if (todo.id === todoId) {
-      title !== null && title !== undefined && title !== ""
-        ? (todo.title = title)
-        : (todo.title = todo.title);
-      deadline !== null && deadline !== undefined && deadline !== ""
-        ? (todo.deadline = deadline)
-        : (todo.deadline = todo.deadline);
-    }
-  });
+app.patch(
+  "/todos/:id/done",
+  checksExistsUserAccount,
+  chekTodoExists,
+  (request, response) => {
+    const { user } = request;
+    const todoId = request.params.id;
 
-  return response
-    .status(201)
-    .json(user.todos.find((todo) => todo.id === todoId));
-});
+    user.todos.forEach((todo) => {
+      if (todo.id === todoId) {
+        todo.done = true;
+      }
+    });
 
-app.patch("/todos/:id/done", checksExistsUserAccount, (request, response) => {
-  // Complete aqui
-});
+    return response
+      .status(201)
+      .json(user.todos.find((todo) => todo.id === todoId));
+  }
+);
 
-app.delete("/todos/:id", checksExistsUserAccount, (request, response) => {
-  // Complete aqui
-});
+app.delete(
+  "/todos/:id",
+  checksExistsUserAccount,
+  chekTodoExists,
+  (request, response) => {
+    const { user } = request;
+    const todoId = request.params.id;
+
+    const newTodoList = user.todos.filter((todo) => todo.id !== todoId);
+    user.todos = newTodoList;
+
+    return response.status(204).json(user.todos);
+  }
+);
 
 module.exports = app;
